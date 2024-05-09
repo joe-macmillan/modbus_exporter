@@ -542,3 +542,56 @@ func TestRegisterMetricsRecoverNegativeCounter(t *testing.T) {
 		t.Fatal("expected an error but got nil")
 	}
 }
+
+
+func TestScaleValue(t *testing.T) {
+	tests := []struct {
+		name   string
+		f      *float64
+		bias   *float64
+		d      float64
+		result float64
+	}{
+		{
+			name:   "No scaling or bias",
+			f:      nil,
+			bias:   nil,
+			d:      10.0,
+			result: 10.0,
+		},
+		{
+			name:   "Only scaling",
+			f:      floatPtr(2.0),
+			bias:   nil,
+			d:      5.0,
+			result: 10.0,
+		},
+		{
+			name:   "Only bias",
+			f:      nil,
+			bias:   floatPtr(3.0),
+			d:      7.0,
+			result: 4.0,
+		},
+		{
+			name:   "Scaling and bias",
+			f:      floatPtr(2.0),
+			bias:   floatPtr(3.0),
+			d:      2.0,
+			result: 1.0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := scaleValue(tt.f, tt.bias, tt.d)
+			if got != tt.result {
+				t.Errorf("got %v, want %v", got, tt.result)
+			}
+		})
+	}
+}
+
+func floatPtr(f float64) *float64 {
+	return &f
+}

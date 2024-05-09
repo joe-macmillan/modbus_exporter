@@ -217,6 +217,7 @@ type MetricDef struct {
 
 	// Scaling factor
 	Factor *float64 `yaml:"factor,omitempty"`
+	Bias *float64 `yaml:"bias,omitempty"`
 }
 
 // Validate semantically validates the given metric definition.
@@ -244,6 +245,10 @@ func (d *MetricDef) validate() error {
 
 	if d.Factor != nil && d.DataType == ModbusBool {
 		return fmt.Errorf("factor cannot be used with boolean data type")
+	}
+
+	if d.Bias != nil && d.DataType == ModbusBool {
+		return fmt.Errorf("bias cannot be used with boolean data type")
 	}
 
 	if d.Factor != nil && *d.Factor == 0.0 {

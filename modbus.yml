@@ -42,6 +42,8 @@ modules:
         # Factor is multiplied with the scraped value to produce the metric value
         # Optional.
         factor: 3.1415926535
+        # Bias will be subtracted from the final value. 
+        bias: 10.
 
       - name: "some_gauge"
         help: "some help for some gauge"
