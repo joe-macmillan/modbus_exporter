@@ -592,6 +592,78 @@ func TestScaleValue(t *testing.T) {
 	}
 }
 
+func TestApplyTransformations(t *testing.T) {
+	tests := []struct {
+		name       string
+		factor     *float64
+		bias       *float64
+		expression *string
+		d          float64
+		want       float64
+		wantErr    bool
+	}{
+		{
+			name:    "No transformation",
+			factor:  nil,
+			bias:    nil,
+			d:       10.0,
+			want:    10.0,
+			wantErr: false,
+		},
+		{
+			name:    "Scaling",
+			factor:  floatPtr(2.0),
+			bias:    nil,
+			d:       10.0,
+			want:    20.0,
+			wantErr: false,
+		},
+		{
+			name:    "Bias",
+			factor:  nil,
+			bias:    floatPtr(5.0),
+			d:       10.0,
+			want:    5.0,
+			wantErr: false,
+		},
+		{
+			name:       "Expression",
+			factor:     nil,
+			bias:       nil,
+			expression: stringPtr("x**2 + 10"),
+			d:          5.0,
+			want:       35.0,
+			wantErr:    false,
+		},
+		{
+			name:       "Error - Factor, Bias, and Expression provided",
+			factor:     floatPtr(2.0),
+			bias:       floatPtr(5.0),
+			expression: stringPtr("x*2 + 10"),
+			d:          5.0,
+			want:       0,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := applyTransformations(tt.factor, tt.bias, tt.expression, tt.d)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("applyTransformations() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("applyTransformations() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func stringPtr(s string) *string {
+	return &s
+}
+
 func floatPtr(f float64) *float64 {
 	return &f
 }

@@ -15,13 +15,14 @@ package modbus
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-
+	"github.com/maja42/goval"
 	"github.com/RichiH/modbus_exporter/config"
 	"github.com/goburrow/modbus"
 )
@@ -313,7 +314,7 @@ func parseModbusData(d config.MetricDef, rawData []byte) (float64, error) {
 				return float64(0), err
 			}
 			data := binary.BigEndian.Uint16(rawDataWithEndianness)
-			return scaleValue(d.Factor, d.Bias, float64(int16(data))), nil
+			return applyTransformations(d.Factor, d.Bias, d.Expression, float64(int16(data)))
 		}
 	case config.ModbusUInt16:
 		{
@@ -325,7 +326,7 @@ func parseModbusData(d config.MetricDef, rawData []byte) (float64, error) {
 				return float64(0), err
 			}
 			data := binary.BigEndian.Uint16(rawDataWithEndianness)
-			return scaleValue(d.Factor, d.Bias, float64(data)), nil
+			return applyTransformations(d.Factor, d.Bias, d.Expression,float64(data))
 		}
 	case config.ModbusInt32:
 		{
@@ -337,7 +338,7 @@ func parseModbusData(d config.MetricDef, rawData []byte) (float64, error) {
 				return float64(0), err
 			}
 			data := binary.BigEndian.Uint32(rawDataWithEndianness)
-			return scaleValue(d.Factor, d.Bias, float64(int32(data))), nil
+			return applyTransformations(d.Factor, d.Bias, d.Expression,float64(int32(data)))
 		}
 	case config.ModbusUInt32:
 		{
@@ -349,7 +350,7 @@ func parseModbusData(d config.MetricDef, rawData []byte) (float64, error) {
 				return float64(0), err
 			}
 			data := binary.BigEndian.Uint32(rawDataWithEndianness)
-			return scaleValue(d.Factor, d.Bias, float64(data)), nil
+			return applyTransformations(d.Factor, d.Bias, d.Expression,float64(data))
 		}
 	case config.ModbusFloat32:
 		{
@@ -361,7 +362,7 @@ func parseModbusData(d config.MetricDef, rawData []byte) (float64, error) {
 				return float64(0), err
 			}
 			data := binary.BigEndian.Uint32(rawDataWithEndianness)
-			return scaleValue(d.Factor, d.Bias, float64(math.Float32frombits(data))), nil
+			return applyTransformations(d.Factor, d.Bias, d.Expression,float64(math.Float32frombits(data)))
 		}
 	case config.ModbusInt64:
 		{
@@ -373,7 +374,7 @@ func parseModbusData(d config.MetricDef, rawData []byte) (float64, error) {
 				return float64(0), err
 			}
 			data := binary.BigEndian.Uint64(rawDataWithEndianness)
-			return scaleValue(d.Factor, d.Bias, float64(int64(data))), nil
+			return applyTransformations(d.Factor, d.Bias, d.Expression,float64(int64(data)))
 		}
 	case config.ModbusUInt64:
 		{
@@ -385,7 +386,7 @@ func parseModbusData(d config.MetricDef, rawData []byte) (float64, error) {
 				return float64(0), err
 			}
 			data := binary.BigEndian.Uint64(rawDataWithEndianness)
-			return scaleValue(d.Factor, d.Bias, float64(data)), nil
+			return applyTransformations(d.Factor, d.Bias, d.Expression, float64(data))
 		}
 	case config.ModbusFloat64:
 		{
@@ -397,7 +398,7 @@ func parseModbusData(d config.MetricDef, rawData []byte) (float64, error) {
 				return float64(0), err
 			}
 			data := binary.BigEndian.Uint64(rawDataWithEndianness)
-			return scaleValue(d.Factor, d.Bias, math.Float64frombits(data)), nil
+			return applyTransformations(d.Factor, d.Bias, d.Expression,math.Float64frombits(data))
 		}
 	default:
 		{
@@ -408,10 +409,6 @@ func parseModbusData(d config.MetricDef, rawData []byte) (float64, error) {
 
 // Scales value by factor and subtracts the bias
 func scaleValue(f *float64, bias *float64, d float64) float64 {
-	if f == nil && bias == nil {
-		return d // No scaling or bias, return input value
-	}
-
 	result := d // Initialize result with input value
 
 	if f != nil {
@@ -423,6 +420,36 @@ func scaleValue(f *float64, bias *float64, d float64) float64 {
 	}
 
 	return result
+}
+
+// Evaluate expression
+func evalExpression(expression string, d float64) (float64, error) {
+	eval := goval.NewEvaluator()
+	variables := map[string]interface{}{
+		"x": d,
+	}
+	result, err := eval.Evaluate(expression, variables, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	return result.(float64), err
+}
+
+// Transform value by the given math expression
+func applyTransformations(factor *float64, bias *float64, expression *string, d float64) (float64, error) {
+	if factor == nil && bias == nil && expression == nil {
+		return d, nil // No transformation, scaling or bias
+	}
+	if (factor != nil || bias != nil) && expression != nil {
+		return 0, errors.New("expressionEval must be nil when factor or bias are provided for the metric")
+	}
+
+	if factor != nil || bias != nil {
+		return scaleValue(factor, bias, d), nil
+	}
+
+	return evalExpression(*expression, d)
 }
 
 // Converts an array of 16 bits from an endianness to the default big Endian
