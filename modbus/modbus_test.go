@@ -636,13 +636,13 @@ func TestApplyTransformations(t *testing.T) {
 			wantErr:    false,
 		},
 		{
-			name:       "Error - Factor, Bias, and Expression provided",
+			name:       "Scaling with Expression",
 			factor:     floatPtr(2.0),
 			bias:       floatPtr(5.0),
 			expression: stringPtr("x*2 + 10"),
 			d:          5.0,
-			want:       0,
-			wantErr:    true,
+			want:       20,
+			wantErr:    false,
 		},
 	}
 

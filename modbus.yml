@@ -44,11 +44,11 @@ modules:
         factor: 3.1415926535
         # Bias will be subtracted from the final value. 
         bias: 10.
-        # If either of factor or bias is given, using expressEval returns an error
         # expressionEval is an arithmetic expression where x represents the metric value. It plugs in the value
-        # and calculates the result of the expression. 
+        # into x and calculates the result of the expression. 
+        # Attention, factor and bias are applied first and expressionEval is applied last.
         # For more about the expression syntax see: https://github.com/maja42/goval/blob/master/readme.md
-        # expressionEval: 'x**2/65535-3.14'
+        expressionEval: 'x**2/65535-3.14'
 
       - name: "some_gauge"
         help: "some help for some gauge"

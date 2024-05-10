@@ -15,7 +15,6 @@ package modbus
 
 import (
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -409,6 +408,9 @@ func parseModbusData(d config.MetricDef, rawData []byte) (float64, error) {
 
 // Scales value by factor and subtracts the bias
 func scaleValue(f *float64, bias *float64, d float64) float64 {
+	if f==nil && bias == nil {
+		return d
+	}
 	result := d // Initialize result with input value
 
 	if f != nil {
@@ -441,15 +443,14 @@ func applyTransformations(factor *float64, bias *float64, expression *string, d 
 	if factor == nil && bias == nil && expression == nil {
 		return d, nil // No transformation, scaling or bias
 	}
-	if (factor != nil || bias != nil) && expression != nil {
-		return 0, errors.New("expressionEval must be nil when factor or bias are provided for the metric")
-	}
 
-	if factor != nil || bias != nil {
+	if expression == nil {
 		return scaleValue(factor, bias, d), nil
 	}
 
-	return evalExpression(*expression, d)
+	scaled := scaleValue(factor, bias, d)
+
+	return evalExpression(*expression, scaled)
 }
 
 // Converts an array of 16 bits from an endianness to the default big Endian

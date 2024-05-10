@@ -254,8 +254,8 @@ func (d *MetricDef) validate() error {
 		return fmt.Errorf("bias cannot be used with boolean data type")
 	}
 
-	if (d.Bias != nil || d.Factor != nil) && d.Expression != nil {
-		return fmt.Errorf("expressionEval cannot have value when any of factor and bias are provided")
+	if d.Expression != nil && d.DataType == ModbusBool {
+		return fmt.Errorf("expressionEval cannot be used with boolean data type")
 	}
 
 	if d.Factor != nil && *d.Factor == 0.0 {
